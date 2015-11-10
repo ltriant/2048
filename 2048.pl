@@ -165,6 +165,8 @@ sub blocks_of_tiles {
 sub shift_tiles {
 	my ($self, $direction) = @_;
 
+	my $moved = 0;
+
 	foreach my $block ($self->blocks_of_tiles($direction)) {
 		my $swapped;
 
@@ -193,8 +195,12 @@ sub shift_tiles {
 					$swapped = 1;
 				}
 			}
+
+			$moved |= $swapped;
 		} while ($swapped);
 	}
+
+	return $moved;
 }
 
 sub merge_tiles {
@@ -232,14 +238,16 @@ sub new_random_tile {
 sub move {
 	my ($self, $direction) = @_;
 
-	$self->shift_tiles($direction);
+	my $moved = 0;
 
-	my $points = $self->merge_tiles($direction);
+	$moved |= $self->shift_tiles($direction);
+
+	$moved |= my $points = $self->merge_tiles($direction);
 	$self->add_score($points);
 
-	$self->shift_tiles($direction);
+	$moved |= $self->shift_tiles($direction);
 
-	$self->new_random_tile;
+	$self->new_random_tile if $moved;
 }
 
 sub as_string {
