@@ -1,8 +1,5 @@
 #!/usr/bin/env perl
-# 2048.pl -- a curses-based 2048 clone with a hint of doge
-#
-# hjkl to move
-# q to quit
+# 2048.pl -- a curses-based 2048 clone with a stupid doge theme
 
 package Game::Cell;
 
@@ -329,7 +326,6 @@ sub move {
 	$canvas->title('score: ' . $board->score);
 
 	if ($board->won)  {
-		# TODO check highscores
 		$cui->dialog("Wow. Much win. Such 2048. Starting new game...");
 		restart();
 	}
@@ -340,18 +336,14 @@ sub move {
 	}
 }
 
-sub highscores {
-}
-
 sub help {
 	$cui->dialog(
 		-title   => '2048 - keys',
-		-message => "hjkl -> to move\nq    -> quit\ns    -> high scores\n?    -> this window"
+		-message => "hjkl -> to move\nq    -> quit\n?    -> this window"
 	);
 }
 
 $cui->set_binding( sub { $cui->mainloopExit }, 'q' );
-$cui->set_binding( sub { highscores() }, 's' );
 $cui->set_binding( sub { help() }, '?' );
 $cui->set_binding( sub { move('h') }, 'h' );
 $cui->set_binding( sub { move('j') }, 'j' );
