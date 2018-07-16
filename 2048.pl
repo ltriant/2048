@@ -326,7 +326,15 @@ sub move {
 	}
 }
 
+sub help {
+	$cui->dialog(
+		-title   => '2048 - keys',
+		-message => "hjkl -> to move\nq    -> quit\ns    -> high scores\n?    -> this window"
+	);
+}
+
 $cui->set_binding( sub { exit }, 'q' );
+$cui->set_binding( sub { help() }, '?' );
 $cui->set_binding( sub { move('h') }, 'h' );
 $cui->set_binding( sub { move('j') }, 'j' );
 $cui->set_binding( sub { move('k') }, 'k' );

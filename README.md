@@ -7,3 +7,5 @@ Why? I got bored on a Friday night.
 hjkl to move
 
 q to quit
+
+? for help
