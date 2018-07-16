@@ -272,28 +272,45 @@ use Curses::UI;
 
 my $board = Game::Board->new;
 
-my $cui = Curses::UI->new(-color_support => 1, -clear_on_exit => 1);
+my $cui = Curses::UI->new(
+	-color_support => 1,
+	-clear_on_exit => 1,
+);
 
-my $status_w = $cui->add('status_w', 'Window');
-my $status = $status_w->add('status', 'TextViewer',
+my $main_w = $cui->add('main_w', 'Window');
+
+my $status = $main_w->add('status', 'TextViewer',
 	-text     => '2048 - wow. such clone.',
 	-fg       => 'yellow',
 	-ipadleft => 3,
 );
 
-my $main_w = $cui->add('main_w', 'Window',
-	-padtop => 1,
-);
 my $canvas = $main_w->add('canvas', 'TextViewer',
 	-title  => 'score: 0',
 	-text   => $board->as_string,
-	-height => 6,
+	-padtop => 1,
+	-height => 7,
 	-width  => 29,
 	-border => 1,
 	-bfg    => 'blue',
 );
 
+my $help = $main_w->add('helpme', 'TextViewer',
+	-text     => 'press ? for help',
+	-fg       => 'yellow',
+	-padtop   => 7,
+	-ipadleft => 6,
+);
+
+$status->focus;
 $canvas->focus;
+$help->focus;
+
+sub restart {
+	$board = Game::Board->new;
+	$canvas->text($board->as_string);
+	$canvas->title('score: ' . $board->score);
+}
 
 sub move {
 	my ($d) = @_;
@@ -312,18 +329,18 @@ sub move {
 	$canvas->title('score: ' . $board->score);
 
 	if ($board->won)  {
+		# TODO check highscores
 		$cui->dialog("Wow. Much win. Such 2048. Starting new game...");
-		$board = Game::Board->new;
-		$canvas->text($board->as_string);
-		$canvas->title('score: ' . $board->score);
+		restart();
 	}
 
 	if ($board->lost) {
 		$cui->dialog("Much lose! Starting new game...");
-		$board = Game::Board->new;
-		$canvas->text($board->as_string);
-		$canvas->title('score: ' . $board->score);
+		restart();
 	}
+}
+
+sub highscores {
 }
 
 sub help {
@@ -333,7 +350,8 @@ sub help {
 	);
 }
 
-$cui->set_binding( sub { exit }, 'q' );
+$cui->set_binding( sub { $cui->mainloopExit }, 'q' );
+$cui->set_binding( sub { highscores() }, 's' );
 $cui->set_binding( sub { help() }, '?' );
 $cui->set_binding( sub { move('h') }, 'h' );
 $cui->set_binding( sub { move('j') }, 'j' );
