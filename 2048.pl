@@ -276,10 +276,11 @@ my $cui = Curses::UI->new(
 
 my $main_w = $cui->add('main_w', 'Window');
 
-my $status = $main_w->add('status', 'TextViewer',
-	-text     => '2048 - wow. such clone.',
-	-fg       => 'yellow',
-	-ipadleft => 3,
+my $status = $main_w->add('status', 'Label',
+	-text          => '2048 - wow. such clone.',
+	-fg            => 'yellow',
+	-width         => 29,
+	-textalignment => 'middle',
 );
 
 my $canvas = $main_w->add('canvas', 'TextViewer',
@@ -292,16 +293,22 @@ my $canvas = $main_w->add('canvas', 'TextViewer',
 	-bfg    => 'blue',
 );
 
-my $help = $main_w->add('helpme', 'TextViewer',
-	-text     => 'press ? for help',
-	-fg       => 'yellow',
-	-padtop   => 7,
-	-ipadleft => 6,
+my $help = $main_w->add('helpme', 'Label',
+	-text          => 'press ? for help',
+	-fg            => 'yellow',
+	-padtop        => 7,
+	-width         => 29,
+	-textalignment => 'middle',
 );
 
-$status->focus;
-$canvas->focus;
-$help->focus;
+my $help_on = 0;
+my $help_label = $main_w->add('helplabel', 'Label',
+	-y       => 9,
+	-padleft => 1,
+	-width   => 29,
+	-height  => 2,
+	-text    => '',
+);
 
 sub restart {
 	$board = Game::Board->new;
@@ -336,20 +343,25 @@ sub move {
 	}
 }
 
-sub help {
-	$cui->dialog(
-		-title   => '2048 - keys',
-		-message => "hjkl -> to move\nq    -> quit\n?    -> this window"
-	);
+sub toggle_help {
+	if ($help_on) {
+		$help_on = 0;
+		$help_label->text('');
+		return;
+	}
+
+	$help_label->text("hjkl - to move\nq    - quit");
+	$help_on = 1;
 }
 
 $cui->set_binding( sub { $cui->mainloopExit }, 'q' );
-$cui->set_binding( sub { help() }, '?' );
+$cui->set_binding( sub { toggle_help() }, '?' );
 $cui->set_binding( sub { move('h') }, 'h' );
 $cui->set_binding( sub { move('j') }, 'j' );
 $cui->set_binding( sub { move('k') }, 'k' );
 $cui->set_binding( sub { move('l') }, 'l' );
 
+$cui->draw;
 $cui->mainloop;
 
 __DATA__
