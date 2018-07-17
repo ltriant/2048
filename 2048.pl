@@ -310,6 +310,16 @@ my $help_label = $main_w->add('helplabel', 'Label',
 	-text    => '',
 );
 
+$cui->set_binding( sub { $cui->mainloopExit }, 'q' );
+$cui->set_binding( sub { toggle_help() }, '?' );
+$cui->set_binding( sub { move('h') }, 'h' );
+$cui->set_binding( sub { move('j') }, 'j' );
+$cui->set_binding( sub { move('k') }, 'k' );
+$cui->set_binding( sub { move('l') }, 'l' );
+
+$cui->draw;
+$cui->mainloop;
+
 sub restart {
 	$board = Game::Board->new;
 	$canvas->text($board->as_string);
@@ -353,16 +363,6 @@ sub toggle_help {
 	$help_label->text("hjkl - to move\nq    - quit");
 	$help_on = 1;
 }
-
-$cui->set_binding( sub { $cui->mainloopExit }, 'q' );
-$cui->set_binding( sub { toggle_help() }, '?' );
-$cui->set_binding( sub { move('h') }, 'h' );
-$cui->set_binding( sub { move('j') }, 'j' );
-$cui->set_binding( sub { move('k') }, 'k' );
-$cui->set_binding( sub { move('l') }, 'l' );
-
-$cui->draw;
-$cui->mainloop;
 
 __DATA__
 
