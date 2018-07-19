@@ -294,7 +294,7 @@ my $canvas = $main_w->add('canvas', 'TextViewer',
 );
 
 my $help = $main_w->add('helpme', 'Label',
-	-text          => 'press ? for help',
+	-text          => 'press ? to show help',
 	-fg            => 'yellow',
 	-padtop        => 7,
 	-width         => 29,
@@ -356,10 +356,12 @@ sub move {
 sub toggle_help {
 	if ($help_on) {
 		$help_on = 0;
+		$help->text('press ? to show help');
 		$help_label->text('');
 		return;
 	}
 
+	$help->text('press ? to hide help');
 	$help_label->text("hjkl - to move\nq    - quit");
 	$help_on = 1;
 }
