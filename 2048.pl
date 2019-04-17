@@ -1,54 +1,14 @@
 #!/usr/bin/env perl
 # 2048.pl -- a curses-based 2048 clone with a stupid doge theme
 
-package Game::Cell;
+package Game::2048;
 
 use warnings;
 use strict;
 
 use Moo;
-
-has value => (is => 'rw');
-
-sub double {
-	my ($self) = @_;
-	$self->value($self->value * 2);
-}
-
-sub as_string {
-	my ($self) = @_;
-
-	my %disp = (
-		0    => sub { '   .' },
-		2    => sub { '   2' },
-		4    => sub { '   4' },
-		8    => sub { '   8' },
-		16   => sub { '  16' },
-		32   => sub { '  32' },
-		64   => sub { '  64' },
-		128  => sub { ' 128' },
-		256  => sub { ' 256' },
-		512  => sub { ' 512' },
-		1024 => sub { '1024' },
-		2048 => sub { '2048' },
-	);
-
-	return unless exists $disp{$self->value};
-
-	return $disp{$self->value}->();
-}
-
-package Game::Board;
-
-use warnings;
-use strict;
-
-use Moo;
-use List::Util qw/sum0/;
-use List::MoreUtils qw/any/;
 
 use constant SIZE => 4;
-
 use constant {
 	UP    => 1,
 	DOWN  => 2,
@@ -62,14 +22,12 @@ has board => (
 		# SIZE x SIZE board full of zeroes
 		my $board = 
 			[ map {
-				[ map {
-					Game::Cell->new(value => 0)
-				} 1 .. SIZE ]
+				[ map { 0 } 1 .. SIZE ]
 			} 1 .. SIZE ];
 
 		# initialise a random cell with a 2
 		my ($x, $y) = (int(rand(SIZE)), int(rand(SIZE)));
-		$board->[$x]->[$y]->value(2);
+		$board->[$x]->[$y] = 2;
 
 		return $board;
 	}
@@ -90,8 +48,21 @@ sub down  { pop->move(DOWN)  }
 sub left  { pop->move(LEFT)  }
 sub right { pop->move(RIGHT) }
 
-sub empty_tiles { grep { $_->value == 0 } map { @$_ } @{ pop->board } }
-sub won { any { $_->value == 2048 } map { @$_ } @{ pop->board } }
+sub empty_tiles {
+	my ($self) = @_;
+
+	grep {
+		my ($x, $y) = @$_;
+		$self->board->[$x]->[$y] == 0
+	} map {
+		my $y = $_;
+		map {
+			my $x = $_;
+			[$x, $y]
+		} 0 .. SIZE - 1
+	} 0 .. SIZE - 1
+}
+sub won { grep { $_ == 2048 } map { @$_ } @{ pop->board } }
 sub lost {
 	my ($self) = @_;
 
@@ -100,9 +71,8 @@ sub lost {
 	foreach my $direction (UP, DOWN, LEFT, RIGHT) {
 		foreach my $block ($self->blocks_of_tiles($direction)) {
 			for (my $i = $#$block; $i > 0; $i--) {
-				my $prev = $block->[$i - 1];
-				my $cur  = $block->[$i];
-				return 0 if ($cur->value == $prev->value) and ($cur->value > 0);
+				return 0 if ($block->[$i] == $block->[$i - 1])
+					and ($block->[$i] > 0);
 			}
 		}
 	}
@@ -144,10 +114,10 @@ sub blocks_of_tiles {
 			my $c = $_;
 			if ($direction == UP or $direction == DOWN) {
 				# if moving up or down, we operate on columns
-				$self->board->[$c]->[$r]
+				[$c, $r]
 			} else {
 				# left or right? operate on rows
-				$self->board->[$r]->[$c]
+				[$r, $c]
 			}
 		} 0 .. SIZE - 1 ]
 	} 0 .. SIZE - 1;
@@ -183,12 +153,15 @@ sub shift_tiles {
 			$swapped = 0;
 
 			for my $i (1 .. $#$block) {
-				my $prev = $block->[$i - 1];
-				my $cur  = $block->[$i];
+				my ($cur_r, $cur_c)   = @{ $block->[$i] };
+				my ($prev_r, $prev_c) = @{ $block->[$i - 1] };
 
-				if (($cur->value == 0) and ($prev->value > 0)) {
-					$cur->value($prev->value);
-					$prev->value(0);
+				my $cur  = \ $self->board->[$cur_r]->[$cur_c];
+				my $prev = \ $self->board->[$prev_r]->[$prev_c];
+
+				if (($$cur == 0) and ($$prev > 0)) {
+					$$cur = $$prev;
+					$$prev = 0;
 					$swapped = 1;
 				}
 			}
@@ -207,18 +180,24 @@ sub merge_tiles {
 
 	foreach my $block ($self->blocks_of_tiles($direction)) {
 		for (my $i = $#$block; $i > 0; $i--) {
-			my $cur  = $block->[$i];
-			my $prev = $block->[$i - 1];
+			my ($cur_r, $cur_c)   = @{ $block->[$i] };
+			my ($prev_r, $prev_c) = @{ $block->[$i - 1] };
 
-			if ($cur->value == $prev->value) {
-				$cur->double;
-				$prev->value(0);
-				push @scores => $cur->value;
+			my $cur  = \ $self->board->[$cur_r]->[$cur_c];
+			my $prev = \ $self->board->[$prev_r]->[$prev_c];
+
+			if ($$cur == $$prev) {
+				$$cur *= 2;
+				$$prev = 0;
+				push @scores => $$cur;
 			}
 		}
 	}
 
-	return sum0(@scores);
+	my $sum = 0;
+	$sum += $_ for @scores;
+
+	return $sum;
 }
 
 sub new_random_tile {
@@ -227,7 +206,8 @@ sub new_random_tile {
 	my @empties = $self->empty_tiles;
 	return unless @empties;
 
-	$empties[ rand @empties ]->value( [2,4]->[int rand(2)] );
+	my ($r, $c) = @{ $empties[ rand @empties ] };
+	$self->board->[$r]->[$c] = [2,4]->[int rand(2)];
 
 	return 1;
 }
@@ -247,13 +227,36 @@ sub move {
 	$self->new_random_tile if $moved;
 }
 
+sub value_as_string {
+	my ($value) = @_;
+
+	my %disp = (
+		0    => '   .',
+		2    => '   2',
+		4    => '   4',
+		8    => '   8',
+		16   => '  16',
+		32   => '  32',
+		64   => '  64',
+		128  => ' 128',
+		256  => ' 256',
+		512  => ' 512',
+		1024 => '1024',
+		2048 => '2048',
+	);
+
+	return unless exists $disp{$value};
+
+	return $disp{$value};
+}
+
 sub as_string {
 	my ($self) = @_;
 
 	my $str = '';
 
 	foreach my $row (@{ $self->board }) {
-		$str .= join '   ', map { $_->as_string } @$row;
+		$str .= join '   ', map { value_as_string($_) } @$row;
 		$str .= "\n";
 	}
 
@@ -267,7 +270,7 @@ use strict;
 
 use Curses::UI;
 
-my $board = Game::Board->new;
+my $board = Game::2048->new;
 
 my $cui = Curses::UI->new(
 	-color_support => 1,
@@ -321,7 +324,7 @@ $cui->draw;
 $cui->mainloop;
 
 sub restart {
-	$board = Game::Board->new;
+	$board = Game::2048->new;
 	$canvas->text($board->as_string);
 	$canvas->title('score: ' . $board->score);
 }
